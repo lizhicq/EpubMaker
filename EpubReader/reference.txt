@@ -1,0 +1,27 @@
+普通话（简体中文）
+
+语音名称	描述
+zh-CN-XiaoxiaoNeural	女性声音，清晰自然，适合通用场景。
+zh-CN-XiaoyiNeural	女性声音，温暖柔和，适合讲故事。
+zh-CN-YunjianNeural	男性声音，沉稳有力，适合新闻播报。
+zh-CN-YunxiNeural	男性声音，年轻活泼，适合对话场景。
+zh-CN-YunxiaNeural	男性声音，温暖亲切，适合儿童内容。
+zh-CN-YunyangNeural	男性声音，专业正式，适合商业场景。
+zh-CN-liaoning-XiaobeiNeural	女性声音，带东北口音，适合地方特色内容。
+粤语（繁体中文）
+
+语音名称	描述
+zh-HK-HiuGaaiNeural	女性声音，清晰自然，适合通用场景。
+zh-HK-HiuMaanNeural	女性声音，温暖柔和，适合讲故事。
+zh-HK-WanLungNeural	男性声音，沉稳有力，适合新闻播报。
+台湾普通话（繁体中文）
+
+语音名称	描述
+zh-TW-HsiaoChenNeural	女性声音，清晰自然，适合通用场景。
+zh-TW-HsiaoYuNeural	女性声音，温暖柔和，适合讲故事。
+zh-TW-YunJheNeural	男性声音，沉稳有力，适合新闻播报。
+其他中文方言
+
+Edge TTS 还支持一些地方方言语音，例如：
+
+zh-CN-shaanxi-XiaoniNeural（陕西话，女性声音）
