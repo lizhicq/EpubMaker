@@ -1,6 +1,6 @@
 import os
 from ebooklib import epub
-from src import cleaner
+from Downloader.src import cleaner
 
 def extract_chapter_number(filename:str):
     # match = re.search(r'第(\d+)', filename)

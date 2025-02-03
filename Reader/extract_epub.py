@@ -20,8 +20,8 @@ def extract_epub_to_txt(epub_file, output_folder):
             if soup is None:
                 continue
             text = soup.get_text()
-            title = soup.find('h2', class_='titlel2std', id='title')
-            title = title.text if title else 'XXX'
+            title = soup.find('h2') #soup.find('h2', class_='titlel2std', id='title')
+            title = title.get_text().strip() if title else 'XXX'
             title = title.replace('/', '\\')
             print(f"title={title}, idx={idx},{text[:50]}")
             # Create a .txt file for each chapter/section
@@ -32,6 +32,6 @@ def extract_epub_to_txt(epub_file, output_folder):
     print(f"EPUB content extracted to folder: {output_folder}")
 
 if __name__ == "__main__":
-    epub_file = '大奉打更人.epub'  # Replace with your EPUB file path
-    output_folder = '/Users/lizhicq/GitHub/EpubReader/test'  # Replace with your desired output folder path
+    epub_file = '/Users/lizhicq/iCloud/Novel/灵境行者.epub'  # Replace with your EPUB file path
+    output_folder = '/Users/lizhicq/GitHub/EpubMaker/data/txt/灵境行者'  # Replace with your desired output folder path
     extract_epub_to_txt(epub_file, output_folder)

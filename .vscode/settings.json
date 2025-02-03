@@ -1,0 +1,12 @@
+{
+    "terminal.integrated.env.osx": {
+        "PYTHONPATH": "./:${PYTHONPATH}"
+    }, 
+    // Only tested on Max OS, refer to the following to modify on different platforms
+    // "terminal.integrated.env.linux": {
+    //     "PYTHONPATH": "./:${PYTHONPATH}"
+    // },
+    // "terminal.integrated.env.windows": {
+    //     "PYTHONPATH": ".;${PYTHONPATH}"
+    // }
+}

@@ -7,13 +7,16 @@ async def text_to_speech(text, output_file, voice="zh-CN-XiaoxiaoNeural"):
     """使用 Edge TTS 将文本转换为语音"""
     try:
         communicate = edge_tts.Communicate(text, voice)
-        await communicate.save(output_file)
+        await asyncio.wait_for(communicate.save(output_file), timeout=120)
         return True  # 成功标志
+    except asyncio.TimeoutError:
+        print(f"Timeout processing {output_file}")
+        return (output_file, text)  # 返回失败的任务信息
     except Exception as e:
         print(f"Error processing {output_file}: {e}")
         return (output_file, text)  # 返回失败的任务信息
 
-async def process_tasks(tasks, max_concurrency=10):
+async def process_tasks(tasks, max_concurrency=100):
     """并发处理任务"""
     semaphore = asyncio.Semaphore(max_concurrency)  # 控制最大并发数
 
@@ -47,7 +50,7 @@ async def process_txt_files(input_dir, output_dir, voice="zh-CN-XiaoxiaoNeural")
 
     return tasks
 
-async def retry_failed_tasks(failed_tasks, max_retries=3):
+async def retry_failed_tasks(failed_tasks, max_retries=10):
     """重试失败的任务"""
     for attempt in range(max_retries):
         print(f"\nRetrying failed tasks (Attempt {attempt + 1})...")
@@ -67,8 +70,9 @@ async def retry_failed_tasks(failed_tasks, max_retries=3):
     return failed_tasks
 
 async def main():
-    input_directory = "data/txt/大奉打更人"  # 替换为你的 txt 文件目录
-    output_directory = "data/audio/大奉打更人-男声"  # 替换为你想保存音频文件的目录
+    novel = "灵境行者"
+    input_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/txt/{novel}"  # 替换为你的 txt 文件目录
+    output_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/audio/{novel}"  # 替换为你想保存音频文件的目录
     voice = "zh-CN-YunxiNeural"  # 选择语音
 
     # 获取任务列表

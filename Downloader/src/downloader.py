@@ -5,7 +5,7 @@ from cleaner import remove_ads_words, remove_duplicates
 import os
 
 
-def download_chapter(chapter, novel_tmp_path='./data/tmp'):
+def download_chapter(chapter, novel_tmp_path='./data/txt'):
     try:
         url, title = chapter['url'], chapter['title']
         
@@ -49,7 +49,7 @@ def task(chapter, progress_counter, lock, total_tasks, novel_tmp_path):
         print_progress_bar(progress_counter.value/total_tasks)
     return chapter
     
-def main_process(chapters:list, book, tmp_dir='./data/tmp'):
+def main_process(chapters:list, book, tmp_dir='./data/txt'):
     novel_tmp_path = os.path.join(tmp_dir, book)
     if not os.path.exists(novel_tmp_path):
         os.mkdir(novel_tmp_path)

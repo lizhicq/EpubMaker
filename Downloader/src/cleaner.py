@@ -1,8 +1,6 @@
 import re,os
-from utils.epub_maker import create_epub_from_multiple_txts
 
-
-def replace_novel_div(filename):
+def replace_novel_div(filename, novel=''):
     with open(filename, 'r', encoding='utf-8') as f:
         content = f.read()
     title = file_path.split('-')[-1].strip().replace('.txt','')
@@ -10,8 +8,8 @@ def replace_novel_div(filename):
     modified_content = remove_ads_words(content)
     modified_content = remove_duplicates(modified_content)
     modified_content = modified_content.replace(title, '')
-    modified_content = modified_content.replace('全球高武','')
-    
+    modified_content = modified_content.replace(novel, '')
+    modified_content = modified_content.replace('DATING', '')
     with open(filename, 'w', encoding='utf-8') as f:
         f.write(modified_content)
 
@@ -51,10 +49,11 @@ def remove_ads_words(original_content: str) -> str:
 
     
 if __name__ == '__main__':
-    clean_dir = './data/tmp/全球高武'
+    novel = '星空职业者'
+    clean_dir = f'./data/txt/{novel}'
     for file in os.listdir(clean_dir):
         file_path = os.path.join(clean_dir, file)
-        replace_novel_div(file_path)
+        replace_novel_div(file_path, novel)
     
-    create_epub_from_multiple_txts('老鹰小鸡','全球高武')
+    #create_epub_from_multiple_txts('老鹰小鸡','全球高武')
     
