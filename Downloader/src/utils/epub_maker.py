@@ -8,7 +8,7 @@ def extract_chapter_number(filename:str):
     index = filename.split('-')[0]
     return int(index)
 
-def create_epub_from_multiple_txts(author, book_name, in_dir='./data/tmp', out_dir='./data/novels'):
+def create_epub_from_multiple_txts(author, book_name, in_dir='./data/txt', out_dir='./data/novels'):
     book = epub.EpubBook()
     # Set the title and author
     book_id = author + '-' + book_name

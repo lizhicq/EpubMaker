@@ -4,11 +4,12 @@ from bs4 import BeautifulSoup
 import os
 from Downloader.src.cleaner import remove_ads_words
 
-def get_html_from_url(url,headless=True):
+def get_html_from_url(url):
     # Set up Chrome options
     chrome_options = Options()
-    if headless == True:
-        chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+
     chrome_options.add_argument("--disable-gpu")  # Disables GPU hardware acceleration
     chrome_options.binary_location = (
         '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -37,7 +38,7 @@ def get_novel_chapters(content_url:str):
     retry = 0
     html_content = ''
     while len(html_content) < 10 and retry < max_retry:
-        html_content = get_html_from_url(content_url, headless=False)
+        html_content = get_html_from_url(content_url)
     
     # Using BeautifulSoup to parse the HTML content
     soup = BeautifulSoup(html_content, 'html.parser')
@@ -63,7 +64,7 @@ def get_novel_chapters(content_url:str):
 
 
 def extract_novel_chapter(chapter_url):
-    chapter_html = get_html_from_url(chapter_url, headless=False)
+    chapter_html = get_html_from_url(chapter_url)
     # 使用 BeautifulSoup 解析 HTML
     soup = BeautifulSoup(chapter_html, 'html.parser')
     # 获取 id 为 'content' 的 div 标签的内容

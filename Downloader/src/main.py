@@ -1,13 +1,13 @@
-from downloader import download_novel
+from Downloader.src.downloader import download_novel
 from parser import * # type: ignore
 from cleaner import *
 from utils.epub_maker import create_epub_from_multiple_txts
 import time
 
 def main():
-    url = "https://www.piaotia.com/html/14/14836/"
-    author = '卖报小郎君'
-    book = '灵境行者'
+    url = "https://www.piaotia.com/html/15/15718/"
+    author = '文抄公'
+    book = '星空职业者'
     
     max_retry = 5
     delay = 5

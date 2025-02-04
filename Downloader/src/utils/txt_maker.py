@@ -1,2 +1,2 @@
-dir_in = './data/tmp'
+dir_in = './data/txt'
 dir_out = './data/novels'
