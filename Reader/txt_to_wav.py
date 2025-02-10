@@ -1,7 +1,8 @@
-import os
+import os, wave
 import edge_tts
 import asyncio
 from tqdm import tqdm
+
 
 async def text_to_speech(text, output_file, voice="zh-CN-XiaoxiaoNeural"):
     """使用 Edge TTS 将文本转换为语音"""
@@ -30,23 +31,48 @@ async def process_tasks(tasks, max_concurrency=100):
         results.append(await future)
     return results
 
+def is_wav_playable(file_path):
+    """检查 .wav 文件是否可以播放（同步函数）"""
+    try:
+        with wave.open(file_path, 'rb') as wav:
+            if wav.getnframes() > 0 and wav.getframerate() > 0:
+                return True
+        return False
+    except (wave.Error, EOFError, FileNotFoundError):
+        return False
+
 async def process_txt_files(input_dir, output_dir, voice="zh-CN-XiaoxiaoNeural"):
-    """遍历输入目录中的所有 .txt 文件，并生成任务列表"""
+    """处理需要生成的文本文件，跳过已存在且可播放的 .wav 文件"""
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     tasks = []
     for filename in os.listdir(input_dir):
-        if filename.endswith(".txt"):
-            txt_file_path = os.path.join(input_dir, filename)
-            output_file_path = os.path.join(output_dir, filename.replace(".txt", ".wav"))
+        if not filename.endswith(".txt"):
+            continue
 
-            with open(txt_file_path, "r", encoding="utf-8") as file:
-                text = file.read()
+        # 构建输入/输出路径
+        txt_path = os.path.join(input_dir, filename)
+        wav_filename = filename.replace(".txt", ".wav")
+        wav_path = os.path.join(output_dir, wav_filename)
 
-            # 创建任务
-            task = text_to_speech(text, output_file_path, voice)
-            tasks.append(task)
+        # 检查目标文件是否需要处理
+        need_process = True
+        if os.path.exists(wav_path):
+            if is_wav_playable(wav_path):  # 如果能播放则跳过
+                print(f"Skipped: {wav_path} (already playable)")
+                need_process = False
+
+        # 需要处理时创建任务
+        if need_process:
+            with open(txt_path, "r", encoding="utf-8") as f:
+                text = f.read().strip()
+            
+            if text:  # 避免处理空文本
+                task = text_to_speech(text, wav_path, voice)
+                tasks.append(task)
+            else:
+                print(f"Skipped: {txt_path} (empty content)")
 
     return tasks
 
@@ -70,7 +96,7 @@ async def retry_failed_tasks(failed_tasks, max_retries=10):
     return failed_tasks
 
 async def main():
-    novel = "灵境行者"
+    novel = "神级大魔头"
     input_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/txt/{novel}"  # 替换为你的 txt 文件目录
     output_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/audio/{novel}"  # 替换为你想保存音频文件的目录
     voice = "zh-CN-YunxiNeural"  # 选择语音

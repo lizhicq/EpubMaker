@@ -1,14 +1,10 @@
-from Downloader.src.downloader import download_novel
+from Downloader.src.downloaderP import download_novel
 from parser import * # type: ignore
 from cleaner import *
 from utils.epub_maker import create_epub_from_multiple_txts
 import time
 
-def main():
-    url = "https://www.piaotia.com/html/15/15718/"
-    author = '文抄公'
-    book = '星空职业者'
-    
+def main(url, author, book):
     max_retry = 5
     delay = 5
     for attempt in range(max_retry):
@@ -33,4 +29,5 @@ def main():
     
     
 if __name__ == "__main__":
-    main()
+    url,author,book = ("https://www.piaotia.com/html/8/8485/",'拉姆','神级大魔头')
+    main(url,author,book)

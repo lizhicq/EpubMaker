@@ -53,8 +53,11 @@ def main_process(chapters:list, book, tmp_dir='./data/txt'):
     novel_tmp_path = os.path.join(tmp_dir, book)
     if not os.path.exists(novel_tmp_path):
         os.mkdir(novel_tmp_path)
-    unfinished_chaps = [chap for chap in chapters if chap['content'] == "" 
-        and f"{chap['title']}.txt" not in os.listdir(novel_tmp_path)]
+    unfinished_chaps = [
+        chap for chap in chapters if chap['content'] == "" 
+        and f"{chap['title']}.txt" not in os.listdir(novel_tmp_path)
+        or os.path.getsize(os.path.join(novel_tmp_path, f"{chap['title']}.txt")) > 100
+    ]
     counter = 0
     print(unfinished_chaps)
     if not os.path.exists(novel_tmp_path):

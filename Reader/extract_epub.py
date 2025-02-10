@@ -32,6 +32,6 @@ def extract_epub_to_txt(epub_file, output_folder):
     print(f"EPUB content extracted to folder: {output_folder}")
 
 if __name__ == "__main__":
-    epub_file = '/Users/lizhicq/iCloud/Novel/灵境行者.epub'  # Replace with your EPUB file path
-    output_folder = '/Users/lizhicq/GitHub/EpubMaker/data/txt/灵境行者'  # Replace with your desired output folder path
+    epub_file = '/Users/lizhicq/iCloud/Novel/神级大魔头.epub'  # Replace with your EPUB file path
+    output_folder = '/Users/lizhicq/GitHub/EpubMaker/data/txt/神级大魔头'  # Replace with your desired output folder path
     extract_epub_to_txt(epub_file, output_folder)
