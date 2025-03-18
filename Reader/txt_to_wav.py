@@ -2,123 +2,99 @@ import os, wave
 import edge_tts
 import asyncio
 from tqdm import tqdm
+import signal
 
+class Task:
+    def __init__(self, name, text, output_file):
+        self.name = name
+        self.text = text
+        self.output_file = output_file
 
-async def text_to_speech(text, output_file, voice="zh-CN-XiaoxiaoNeural"):
-    """使用 Edge TTS 将文本转换为语音"""
-    try:
-        communicate = edge_tts.Communicate(text, voice)
-        await asyncio.wait_for(communicate.save(output_file), timeout=120)
-        return True  # 成功标志
-    except asyncio.TimeoutError:
-        print(f"Timeout processing {output_file}")
-        return (output_file, text)  # 返回失败的任务信息
-    except Exception as e:
-        print(f"Error processing {output_file}: {e}")
-        return (output_file, text)  # 返回失败的任务信息
+class TxtToWavConverter:
+    def __init__(self, input_dir, output_dir, voice="zh-CN-XiaoxiaoNeural", max_concurrency=100, task_timeout=120, total_timeout=600):
+        self.input_dir = input_dir
+        self.output_dir = output_dir
+        self.voice = voice
+        self.max_concurrency = max_concurrency
+        self.task_timeout = task_timeout
+        self.total_timeout = total_timeout
 
-async def process_tasks(tasks, max_concurrency=100):
-    """并发处理任务"""
-    semaphore = asyncio.Semaphore(max_concurrency)  # 控制最大并发数
+    async def text_to_speech(self, task):
+        try:
+            communicate = edge_tts.Communicate(task.text, self.voice)
+            await asyncio.wait_for(communicate.save(task.output_file), timeout=self.task_timeout)
+            return True
+        except asyncio.TimeoutError as e:
+            print(f"Timeout Error processing {task.output_file}: {e}")
+            return task
+        except Exception as e:
+            print(f"Other Error processing {task.output_file}: {e}")
+            return task
 
-    async def limited_task(task):
-        async with semaphore:
-            return await task
+    async def process_tasks(self, tasks):
+        print(f"process {len(tasks)} tasks {[task.name for task in tasks]}")
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+        async def limited_task(task):
+            async with semaphore:
+                return await self.text_to_speech(task)
+        async def inner():
+            return [await future for future in tqdm(
+                asyncio.as_completed([limited_task(task) for task in tasks]),
+                total=len(tasks), desc="Processing")]
+        try:
+            # 将总超时逻辑移入此处
+            return await asyncio.wait_for(inner(), timeout=self.total_timeout)
+        except asyncio.TimeoutError:
+            print("Total processing timeout reached. Exiting process_tasks.")
+            return None
 
-    # 使用 tqdm 显示进度条
-    results = []
-    for future in tqdm(asyncio.as_completed([limited_task(task) for task in tasks]), total=len(tasks), desc="Processing"):
-        results.append(await future)
-    return results
+    def is_file_size_valid(self, txt_file_path, wav_file_path, min_size_ratio=5.9/16):
+        try:
+            txt_size_kb = os.path.getsize(txt_file_path) / 1024
+            wav_size_mb = os.path.getsize(wav_file_path) / (1024 * 1024)
+            return wav_size_mb >= 0.9 * txt_size_kb * min_size_ratio
+        except FileNotFoundError:
+            return False
 
-def is_wav_playable(file_path):
-    """检查 .wav 文件是否可以播放（同步函数）"""
-    try:
-        with wave.open(file_path, 'rb') as wav:
-            if wav.getnframes() > 0 and wav.getframerate() > 0:
-                return True
-        return False
-    except (wave.Error, EOFError, FileNotFoundError):
-        return False
+    async def process_txt_files(self):
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+        tasks = []
+        for filename in os.listdir(self.input_dir):
+            if filename.endswith(".txt"):
+                txt_path = os.path.join(self.input_dir, filename)
+                wav_path = os.path.join(self.output_dir, filename.replace(".txt", ".wav"))
+                if not (os.path.exists(wav_path) and self.is_file_size_valid(txt_path, wav_path)):
+                    with open(txt_path, "r", encoding="utf-8") as f:
+                        text = f.read().strip()
+                    if text:
+                        tasks.append(Task(filename, text, wav_path))
+        return tasks
 
-async def process_txt_files(input_dir, output_dir, voice="zh-CN-XiaoxiaoNeural"):
-    """处理需要生成的文本文件，跳过已存在且可播放的 .wav 文件"""
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    def timeout_handler(self, signum, frame):
+        raise TimeoutError("Processing time exceeded")
 
-    tasks = []
-    for filename in os.listdir(input_dir):
-        if not filename.endswith(".txt"):
-            continue
-
-        # 构建输入/输出路径
-        txt_path = os.path.join(input_dir, filename)
-        wav_filename = filename.replace(".txt", ".wav")
-        wav_path = os.path.join(output_dir, wav_filename)
-
-        # 检查目标文件是否需要处理
-        need_process = True
-        if os.path.exists(wav_path):
-            if is_wav_playable(wav_path):  # 如果能播放则跳过
-                print(f"Skipped: {wav_path} (already playable)")
-                need_process = False
-
-        # 需要处理时创建任务
-        if need_process:
-            with open(txt_path, "r", encoding="utf-8") as f:
-                text = f.read().strip()
-            
-            if text:  # 避免处理空文本
-                task = text_to_speech(text, wav_path, voice)
-                tasks.append(task)
-            else:
-                print(f"Skipped: {txt_path} (empty content)")
-
-    return tasks
-
-async def retry_failed_tasks(failed_tasks, max_retries=10):
-    """重试失败的任务"""
-    for attempt in range(max_retries):
-        print(f"\nRetrying failed tasks (Attempt {attempt + 1})...")
-        
-        # 将失败的任务重新转换为异步任务
-        retry_tasks = [text_to_speech(text, output_file) for (output_file, text) in failed_tasks]
-        
-        # 处理重试任务
-        retry_results = await process_tasks(retry_tasks)
-        
-        # 收集新的失败任务
-        failed_tasks = [task for task in retry_results if task is not True]
-        
-        if not failed_tasks:  # 如果没有失败任务，退出重试
-            break
-    
-    return failed_tasks
-
-async def main():
-    novel = "神级大魔头"
-    input_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/txt/{novel}"  # 替换为你的 txt 文件目录
-    output_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/audio/{novel}"  # 替换为你想保存音频文件的目录
-    voice = "zh-CN-YunxiNeural"  # 选择语音
-
-    # 获取任务列表
-    tasks = await process_txt_files(input_directory, output_directory, voice)
-
-    # 并发处理任务
-    results = await process_tasks(tasks, max_concurrency=300)  # 设置最大并发数
-
-    # 收集失败的任务
-    failed_tasks = [task for task in results if task is not True]
-
-    # 如果有失败的任务，进行重试
-    if failed_tasks:
-        print(f"\n{len(failed_tasks)} tasks failed. Retrying...")
-        failed_tasks = await retry_failed_tasks(failed_tasks)
-
-    # 统计成功和失败的任务数
-    success_count = results.count(True) + (len(failed_tasks) - len([task for task in failed_tasks if task is not True]))
-    failure_count = len(failed_tasks)
-    print(f"\nProcessing complete! Success: {success_count}, Failed: {failure_count}")
+    async def run(self):
+        for attempt in range(10):
+            tasks = await self.process_txt_files()
+            results = await self.process_tasks(tasks)
+            if results is None:
+                print("Skipping current attempt due to total timeout.")
+                continue
+            if all(result is True for result in results):
+                print("No unfinished txts needing to be converted, exit")
+                break
+            print(f"\nSome tasks failed. Retrying...")
+            self.task_timeout += 20
+            success_count = results.count(True)
+            undone_count = len(results) - success_count
+            print(f"\nAttempt {attempt + 1} completed! Success: {success_count}, unfinished: {undone_count}")
+        print("All done or reached max attempts!")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    novel = "武极天下"
+    input_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/txt/{novel}"
+    output_directory = f"/Users/lizhicq/GitHub/EpubMaker/data/audio/{novel}"
+    voice = "zh-CN-YunxiNeural"
+    converter = TxtToWavConverter(input_directory, output_directory, voice)
+    asyncio.run(converter.run())
